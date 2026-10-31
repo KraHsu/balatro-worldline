@@ -1,0 +1,26 @@
+[manifest]
+version = "1.0.0"
+dump_lua = false
+priority = 0
+
+# Composite the tree into the same scene Canvas as the game. The native cursor
+# and Steamodded's existing ScreenShader/CRT pipeline run after this hook.
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "if (self.OVERLAY_MENU) or (not self.F_HIDE_BG) then"
+position = "before"
+match_indent = true
+payload = '''
+if WORLDLINE and WORLDLINE.draw_before_overlay then WORLDLINE.draw_before_overlay(self) end
+'''
+
+[[patches]]
+[patches.pattern]
+target = "game.lua"
+pattern = "self.CURSOR:translate_container()"
+position = "before"
+match_indent = true
+payload = '''
+if WORLDLINE and WORLDLINE.draw_native then WORLDLINE.draw_native(self) end
+'''

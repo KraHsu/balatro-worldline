@@ -1,0 +1,16 @@
+{
+  "id": "WorldLine",
+  "name": "WorldLine",
+  "author": [
+    "KraHsu"
+  ],
+  "description": "Record worldlines, explore perturbations, and undo the last action.",
+  "prefix": "worldline",
+  "main_file": "main.lua",
+  "icon_path": "modicon.png",
+  "version": "0.6.4",
+  "dependencies": [
+    "Steamodded (>=26.1002.0)",
+    "Lovely (>=0.10.0)"
+  ]
+}

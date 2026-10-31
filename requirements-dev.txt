@@ -1,0 +1,2 @@
+# Includes the Lua 5.1 and LuaJIT 2.1 runtimes used by tools/test.py.
+lupa==2.6

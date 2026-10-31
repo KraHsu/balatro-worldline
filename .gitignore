@@ -1,0 +1,28 @@
+# Local runtimes, copied game files, backups, dependencies and generated packages.
+/.tools/
+/.deps/
+/dist/
+/.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+
+# Never publish player data or diagnostic output.
+*.jkr
+*.btree.json
+*.worldline.json
+*.mp4
+*.zip
+/WorldLine/
+/BalatroTree/
+*.log
+*.frames.csv
+*.events.jsonl
+*.session.json
+*.bak
+*.exe
+*.dll

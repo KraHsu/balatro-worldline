@@ -1,0 +1,10 @@
+{
+  "name": "WorldLine",
+  "version_number": "0.6.4",
+  "website_url": "https://github.com/KraHsu/balatro-worldline",
+  "description": "Branching run history, undo, bookmarks, snapshot comparison and local save sharing for Balatro.",
+  "dependencies": [
+    "Steamodded-Steamodded-26.1002.0",
+    "Thunderstore-lovely-0.10.0"
+  ]
+}

@@ -1,0 +1,10 @@
+require('love.thread')
+local incoming,outgoing=...
+local requests,responses=love.thread.getChannel(incoming),love.thread.getChannel(outgoing)
+local job=requests:demand()
+local ok,result=xpcall(function()
+    local W=assert(loadstring(job.windows))()
+    local Picker=assert(loadstring(job.shell))()
+    return Picker.open(W,job)
+end,debug.traceback)
+responses:push(ok and result or {error=tostring(result)})
