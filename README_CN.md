@@ -21,7 +21,7 @@
 
 **Balatro 世界线模组**：保存一局牌的分支历史，回到先前阶段尝试另一种打法或购物方案，再比较两条路线。支持单步撤回、本地续玩、书签、节点对比和 JSON 分享。
 
-**当前版本：0.6.4 实验版。** 验证基线为 Balatro `1.0.1o-FULL`、Steamodded `26.1002.0`、Lovely `0.10.0`。界面跟随游戏语言，支持包括简体中文、繁体中文和英语在内的 15 种语言。
+**当前版本：0.6.5 实验版。** 验证基线为 Balatro `1.0.1o-FULL`、Steamodded `26.1002.0`、Lovely `0.10.0`。界面跟随游戏语言，支持包括简体中文、繁体中文和英语在内的 15 种语言。
 
 [下载](https://github.com/KraHsu/balatro-worldline/releases/latest) · [使用指南](docs/usage_cn.md) · [架构说明](docs/architecture.md) · [开发与测试](docs/development.md)
 
@@ -34,7 +34,7 @@
 以下步骤以 Windows Steam 版为例。开始前退出游戏，并备份 `%APPDATA%\Balatro`。
 
 1. 按官方说明安装 [Lovely](https://github.com/ethangreen-dev/lovely-injector#manual-installation) 和 [Steamodded](https://docs.smods.dev/Installation/Installing%20Steamodded%20windows/)。Windows 下，Lovely 的 `winmm.dll` 放在 `Balatro.exe` 旁；Steamodded 放在 `%APPDATA%\Balatro\Mods\smods`。最低依赖为 Steamodded `26.1002.0`、Lovely `0.10.0`；上方版本组合是当前验证基线。
-2. 从 [Releases](https://github.com/KraHsu/balatro-worldline/releases/latest) 下载 `WorldLine-0.6.4.zip`，解压到 `%APPDATA%\Balatro\Mods`。最终应有：
+2. 从 [Releases](https://github.com/KraHsu/balatro-worldline/releases/latest) 下载 `WorldLine-0.6.5.zip`，解压到 `%APPDATA%\Balatro\Mods`。最终应有：
 
    ```text
    %APPDATA%\Balatro\Mods\WorldLine\
@@ -47,7 +47,7 @@
    └─ localization/
    ```
 
-3. 启动游戏，在 Mods 列表中确认 `WorldLine 0.6.4` 已加载。开始一局，默认会在稳定状态自动建立世界线，无需输入种子。
+3. 启动游戏，在 Mods 列表中确认 `WorldLine 0.6.5` 已加载。开始一局，默认会在稳定状态自动建立世界线，无需输入种子。
 
 更新时退出游戏，用新版完整替换旧 `WorldLine` 文件夹，避免同时安装多个版本。**Mod ID、安装目录和数据目录均为 `WorldLine`。** 从 0.6.3 或更早版本升级时，请先按[迁移说明](docs/development.md#legacy-data-migration)转换已有记录。
 
@@ -62,6 +62,8 @@
 - 选中一个节点可查看详情、阶段选择和书签；选中恰好两个节点可对比快照。缩略图可拖动定位，完整快捷键见[使用指南](docs/usage_cn.md#画布与快捷键)。
 
 世界线记录的是**阶段**：起点、选择或跳过盲注、领取奖金进入商店、离店，以及失败终点。出牌、弃牌和商店内操作不会各自增加节点；连线概括阶段内的选择，目标节点的「选择」页提供明细。未完成阶段的进度会另外保存，重新载入时可接着玩。
+
+快速输入会保留原来的卡牌目标和选牌，等上一段动画结束后执行；卡牌或阶段已经改变的排队操作会取消并提示。撤回栈仅保留本次游玩的最近 200 个已完成操作，退出后不保留；旧版已经缺失的撤回点无法补回。
 
 ## 成就与种子局规则
 

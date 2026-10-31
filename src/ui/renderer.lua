@@ -359,6 +359,12 @@ function Renderer.draw_undo(ctx, options)
         g.scale(render_scale)
         g.translate(geometry.offset_x, geometry.offset_y); g.scale(geometry.ui_scale)
         draw_button(g, font_for(g), control, feedback[control.key])
+        local notice=ctx.undo_notice
+        if notice and love.timer and love.timer.getTime()<notice.until_time then
+            local width=720
+            bevel(g,control.x-width-12,control.y,width,32,C.panel)
+            text(g,font_for(g),notice.text,control.x-width-5,control.y+5,18,width-14,C.cream,'center')
+        end
     end)
     return true
 end

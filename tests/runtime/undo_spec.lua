@@ -15,6 +15,7 @@ local invalidations = 0
 local choice_descriptions = 0
 local finalized_observation, fallback_actions
 local behaviors, originals, errors = {}, {}, {}
+EventManager={update=function(_,callback)return callback()end}
 local irreversible = {
     'play_cards_from_highlighted', 'discard_cards_from_highlighted', 'buy_from_shop', 'sell_card',
     'reroll_shop', 'use_card', 'skip_booster', 'select_blind', 'skip_blind', 'cash_out',
@@ -338,4 +339,19 @@ for _, callback in ipairs(queued) do callback() end
 stable = true
 assert(Undo.update(ctx) and finalized_observation.incomplete and #finalized_observation.actions == 2)
 assert(finalized_observation.actions[2].callback == 'use_card')
+
+-- Native event continuations must execute even while player inputs are queued.
+-- Otherwise buy/open events deadlock the very animation the queue waits for.
+Undo.clear()
+behaviors.use_card=nil
+local before_events=prepares
+ctx.input_queue={should_defer=function()error('Native events must bypass the player queue')end}
+local event_a,event_b,event_c=EventManager:update(function()return G.FUNCS.use_card()end)
+assert(event_a=='use_card' and event_b==nil and event_c==false)
+assert(prepares==before_events and not Undo.has_pending(),'Automatic events are not standalone player actions')
+local event_ok,event_error=pcall(EventManager.update,EventManager,function()error(native_error)end)
+assert(not event_ok and event_error==native_error,'Keep the original native event exception')
+ctx.input_queue=nil
+G.FUNCS.use_card();assert(Undo.update(ctx)and prepares==before_events+1,
+ 'Event depth recovers after exceptions, so the next player action is observed')
 print('PASS undo: bounded session stack, native mutations, nested/async coalescing, no-op rejection, continuous streaks')

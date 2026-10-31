@@ -75,6 +75,8 @@ Every push, pull request and manual Actions run builds and tests both distributi
 
 Selection and card sorting do not create undo entries. Plays, discards, and individual shop actions do not create separate stage nodes. The incoming connection summarizes the phase's decisions; the Choices tab contains their details. Unfinished phase progress is saved separately for local resume.
 
+Fast inputs wait for the preceding animation to finish, then execute with their original card targets and selections. Inputs whose targets or stage have changed are cancelled with a brief notice. Undo keeps up to 200 completed actions in the current session; restarting does not restore this stack. Missing entries from older versions cannot be recovered.
+
 ## Achievements and seeded runs
 
 | Use | Adds WorldLine's seeded-run restriction? |

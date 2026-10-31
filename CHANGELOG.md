@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.5
+
+- Queue fast player inputs until the previous animation reaches a stable boundary, preserving a separate Undo point for each completed action instead of clearing the history.
+- Preserve queued card targets and hand selections; cancel stale inputs when their cards, blind or round change. Native event continuations still execute immediately.
+- Show brief in-game feedback when Undo is unavailable, reaches a history boundary or fails to restore, in all 15 game languages.
+- Correct copied negative Planet faces when native copies inherit discovery-bypass parameters after their sprites have been created.
+- Rebuild Wheel of Fortune, Hex and Ectoplasm eligibility caches before restoring highlighted consumable controls, preventing `next(nil)` restore failures.
+- Keep the existing archive format. This update does not require migration; previously missing session-only Undo entries cannot be reconstructed.
+
 ## 0.6.4
 
 - Organize the WorldLine runtime into domain, runtime, storage, UI, video, platform and worker modules under `src/`.

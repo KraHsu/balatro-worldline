@@ -221,6 +221,7 @@ function UI.undo(ctx, source)
     if not available then
         reason = reason or text(ctx, '还没有可以撤回的操作', 'There is no action to undo yet')
         state.notice, ctx.status = reason, reason
+        if ctx.undo_input_notice then ctx.undo_input_notice(reason)end
         return nil, reason
     end
     if type(ctx.requires_undo_confirmation) == 'function' then
@@ -1543,7 +1544,13 @@ function UI.install(ctx)
                     local lx, ly = Renderer.to_logical(x, y, Renderer.geometry())
                     if hit(control, lx, ly) then
                         state.undo_press = which
-                        if control.enabled ~= false then UI.undo(ctx, 'HUD button') end
+                        if control.enabled~=false then UI.undo(ctx,'HUD button')
+                        else
+                            local _,reason=UI.can_undo(ctx)
+                            reason=reason or text(ctx,'没有可撤回的操作','No action to undo')
+                            state.notice,ctx.status=reason,reason
+                            if ctx.undo_input_notice then ctx.undo_input_notice(reason)end
+                        end
                         return
                     end
                 end

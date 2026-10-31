@@ -155,6 +155,8 @@ local PoolEnvironment = dofile('src/domain/pool_environment.lua')
 local CardRuntime = dofile('src/runtime/card_runtime.lua')
 local modules = {tree = Tree, codec = Codec, storage = Storage, snapshot = Snapshot, hooks = Hooks, ui = UI,
     undo = Undo, progress = Progress, i18n = I18n, choices = Choices, details = Details, replay = Replay, diff = Diff,
+    card_visuals = {install=function()end},
+    input_queue = dofile('src/runtime/input_queue.lua'),
     pool_environment = PoolEnvironment, card_runtime = CardRuntime,
     film=dofile('src/video/plan.lua'),film_runtime=dofile('src/video/playback.lua'),film_host=dofile('src/video/host.lua')}
 SMODS = {version = "26.1002.0", current_mod = {id = "WorldLine"}}
@@ -740,8 +742,8 @@ assert(not app.unsaved[async_id]
 for file in pairs(files) do assert(file:sub(1, #"WorldLine/") == "WorldLine/") end
 
 -- Independent purchases may arrive while native events are still pending.
--- Preserve all input order; without intermediate snapshots this burst must
--- neither become one-action Undo nor qualify for identical-route reuse.
+-- Queue fast player inputs until a stable boundary, retaining independent
+-- before-states, complete replay inputs and each operation's real money delta.
 G.FUNCS.start_run({}); G:update(0.1)
 G.FUNCS.cash_out(); G:update(0.1)
 local overlapping_shop = app.tree.current
@@ -753,34 +755,36 @@ G.FUNCS.buy_from_shop(shop_event('j_overlap_c'))
 assert(captures == before_overlapping_captures, 'overlapping inputs never attempt unsafe intermediate snapshots')
 engine_ready = true
 G:update(0.1)
-assert(#app.phase_choices == 3 and Undo.count() == 0 and not app.can_undo())
+G:update(0.1);G:update(0.1)
+assert(#app.phase_choices == 3 and Undo.count() >= 3 and app.can_undo())
 for index, key in ipairs({'j_overlap_a','j_overlap_b','j_overlap_c'}) do
     local choice = app.phase_choices[index]
-    assert(choice.card_key == key and choice.replay_incomplete and choice.money_delta == nil,
-        'each independent input is retained without assigning the batch total to one purchase')
+    assert(choice.card_key == key and not choice.replay_incomplete and choice.money_delta ~= nil,
+        'each queued purchase retains its own validated state and money delta')
 end
 assert(app.save_now())
 local overlapping_disk = persisted(app.tree.metadata.run_id)
-assert(#overlapping_disk.resume.choices == 3 and not Choices.replay_complete(overlapping_disk.resume.choices))
+assert(#overlapping_disk.resume.choices == 3 and Choices.replay_complete(overlapping_disk.resume.choices))
 G.FUNCS.toggle_shop(); G:update(0.1)
 local overlapping_future, overlapping_next = app.tree.current, app.tree.next_id
-assert(app.tree:get(overlapping_future).action.replay_schema == nil)
+assert(app.tree:get(overlapping_future).action.replay_schema == 1)
 assert(app.undo()); G:update(0.1)
 assert(app.tree.current == overlapping_shop and #app.phase_choices == 3
-    and not Choices.replay_complete(app.phase_choices)
-    and app.tree:get(overlapping_future), 'Undo restores incomplete private choices and retains the visited future')
+    and Choices.replay_complete(app.phase_choices)
+    and app.tree:get(overlapping_future), 'Undo restores complete private choices and retains the visited future')
 G.FUNCS.toggle_shop(); G:update(0.1)
-assert(app.tree.current ~= overlapping_future and app.tree.next_id == overlapping_next + 1,
-    'uncertain operation evidence cannot reuse a historical child even when the final state repeats')
+assert(app.tree.current == overlapping_future and app.tree.next_id == overlapping_next,
+    'complete queued inputs can reuse an identical historical route')
 
--- A missing initial before-state also retains its input, without a nil-entry
--- crash or claiming that an older action is the one being undone.
+-- An input before the first stable frame also waits for its own before-state.
 G.FUNCS.cash_out(); G:update(0.1)
 engine_ready = false
+local before_queued_history=Undo.count()
 G.FUNCS.buy_from_shop(shop_event('j_missing_before'))
 engine_ready = true
 G:update(0.1)
-assert(#app.phase_choices == 1 and app.phase_choices[1].replay_incomplete and Undo.count() == 0)
+G:update(0.1)
+assert(#app.phase_choices == 1 and not app.phase_choices[1].replay_incomplete and Undo.count()==before_queued_history+1)
 
 -- Failure after a normal choice append rolls back the tentative log/resume;
 -- the observer fallback records the input once and marks it incomplete.

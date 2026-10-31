@@ -44,13 +44,17 @@ flowchart LR
 | Resume checkpoint | Latest stable progress within the current stage | Saved and shared, without an extra graph node |
 | Undo stack | State before one irreversible operation | Current session only, bounded to 200 entries |
 
-Native callbacks record ordered inputs, including the global playing-card order that deck viewing can change and pre-action card counters consumed by native previews. Stable-boundary observation confirms their effects and commits stage transitions. Selecting a card does not become an action. Fast overlapping inputs retain their descriptions, but do not pretend to have an intermediate Undo snapshot.
+Native callbacks record ordered inputs, including the global playing-card order that deck viewing can change and pre-action card counters consumed by native previews. Stable-boundary observation confirms their effects and commits stage transitions. Selecting a card does not become an action.
+
+The session input queue retains up to 16 pending player callbacks, their card references and hand selections. It dispatches one at a stable boundary, after the preceding action has been finalized. Changed cards, rounds or blinds cancel stale inputs. Native event-manager continuations bypass this queue and remain part of their parent action. The queue is transient and does not alter RNG or reconstruct missing legacy inputs.
 
 Branch reuse compares children of the current node. Both operation order and complete seeded gameplay state must match. A matching summary alone is insufficient. Incomplete historical evidence creates a separate branch.
 
 ## Restore and seeded behavior
 
 Restore validates the archive and snapshot, then rebuilds the native scene at a frame boundary. It preserves named RNG streams, gameplay card identity and recorded order. Poker-hand candidate enumeration is stored separately because copying a Lua table can change its `pairs` order. Only registered restored hand maps use that enumeration; ordinary tables keep native iteration behavior.
+
+Before restoring highlighted consumable controls, the card adapter derives eligibility caches from the restored Joker inventory without running gameplay updates. A separate visual adapter synchronizes copied Planet discovery-bypass flags and sprite positions without consuming RNG, changing card identity or modifying profile discoveries.
 
 The progress adapter keeps the seeded-run restriction monotonic. Passive recording and ordinary single Undo retain vanilla eligibility; explicit worldline features and confirmed continuous Undo apply the restriction. Candidate-pool adapters temporarily use the root profile conditions and restore the real profile afterwards.
 

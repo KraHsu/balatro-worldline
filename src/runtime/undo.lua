@@ -4,17 +4,20 @@
 local Undo = {MAX_HISTORY = 200}
 local unpack_values = unpack or table.unpack
 local installed, installed_ctx, depth, generation = false, nil, 0, 0
+local event_depth=0
 local latest, latest_action, pending
 local history, consecutive, pruned_tail, revision = {}, 0, nil, 0
+local history_boundary
 
-local function reset_history()
+local function reset_history(reason)
     history, latest, latest_action, consecutive, pruned_tail = {}, nil, nil, 0, nil
     revision = revision + 1
+    history_boundary=reason
 end
 
 local function push(entry, description)
     history[#history + 1] = {entry = entry, action = description}
-    if #history > Undo.MAX_HISTORY then table.remove(history, 1) end
+    if #history > Undo.MAX_HISTORY then table.remove(history, 1);history_boundary='history_limit' end
     latest, latest_action = entry, description
     consecutive, pruned_tail = 0, nil
     revision = revision + 1
@@ -83,6 +86,7 @@ function Undo.has_pending() return pending ~= nil end
 function Undo.count() return #history end
 function Undo.consecutive_count() return consecutive end
 function Undo.revision() return revision end
+function Undo.boundary_reason()return history_boundary end
 function Undo.get_pruned_tail() return pruned_tail end
 function Undo.set_pruned_tail(value) pruned_tail = value end
 
@@ -100,6 +104,7 @@ function Undo.clear()
     generation = generation + 1
     reset_history()
     pending, Undo.last_error = nil, nil
+    if installed_ctx and installed_ctx.input_queue then installed_ctx.input_queue:clear()end
 end
 
 function Undo.update(ctx, allow_overlay)
@@ -116,7 +121,7 @@ function Undo.update(ctx, allow_overlay)
             -- be validated, exposing an older entry would silently rewind more
             -- than the player's latest action. Future valid input can start a
             -- new bounded history; this is not a failed Undo restore transaction.
-            reset_history()
+            reset_history('finalize_failed')
             if type(ctx.undo_record_untracked) == 'function' then
                 pcall(ctx.undo_record_untracked, candidate.observation.actions, 'finalize_failed')
             end
@@ -142,6 +147,18 @@ function Undo.install(ctx)
     assert(type(ctx) == 'table' and type(ctx.undo_prepare) == 'function'
         and type(ctx.undo_finalize) == 'function', 'Undo requires snapshot preparation and validation callbacks')
     installed, installed_ctx = true, ctx
+    -- A use/open invoked from the native event manager is a continuation of
+    -- its parent action. Deferring it would deadlock the queue it must finish.
+    if EventManager and type(EventManager.update)=='function' then
+        local native=EventManager.update
+        EventManager.update=function(...)
+            event_depth=event_depth+1
+            local result=pack(pcall(native,...))
+            event_depth=event_depth-1
+            if not result[1]then error(result[2],0)end
+            return unpack_values(result,2,result.n)
+        end
+    end
     for name, spec in pairs(specs) do
         local original = G.FUNCS[name]
         if type(original) == 'function' then
@@ -151,10 +168,14 @@ function Undo.install(ctx)
                 -- Settle the preceding step here before capturing the next one.
                 -- A native Event's buy->use continuation is still unstable and
                 -- keeps the same pending candidate instead of making two steps.
-                local child = depth == 0 and continuation(pending, name, args)
+                local child = depth == 0 and (continuation(pending,name,args)or pending and event_depth>0)
                 if depth == 0 and pending and not child then Undo.update(ctx, false) end
+                if depth==0 and event_depth==0 and enabled(ctx) and ctx.input_queue
+                    and ctx.input_queue:should_defer() then
+                    return ctx.input_queue:enqueue(name,args,G.FUNCS[name])
+                end
                 local epoch = generation
-                local observe = depth == 0 and not child and enabled(ctx)
+                local observe = depth == 0 and event_depth==0 and not child and enabled(ctx)
                 local prepare = observe and not pending
                 depth = depth + 1
                 if observe then
@@ -182,7 +203,7 @@ function Undo.install(ctx)
                         ctx.invalidate_snapshot()
                     end
                     if child and pending then
-                        pending.continuations[args[1]] = nil
+                        if args[1]~=nil then pending.continuations[args[1]] = nil end
                     elseif observe then
                         if pending then
                             local observation = pending.observation
@@ -199,7 +220,7 @@ function Undo.install(ctx)
                         if pending.observation.incomplete then
                             -- Keep the input descriptions, but never offer a
                             -- stale older Undo or combine independent clicks.
-                            reset_history()
+                            reset_history(pending.observation.reason)
                         end
                     end
                 end

@@ -69,4 +69,14 @@ if TEST_JSON then
     local restored = assert(Codec.decode(Codec.encode(wire, TEST_JSON), TEST_JSON))
     assert(restored.schema == 1 and restored.cards[31].from_tag and next(restored.cards[60]) == nil)
 end
-print('PASS card runtime: exact tag provenance, voucher/purchase behavior, legacy unknowns, bounded plain-data capture')
+local plain={ability={set='Joker'}}
+local foil={ability={set='Joker'},edition={foil=true}}
+local wheel={ability={name='The Wheel of Fortune'}}
+local hex={ability={name='Hex'}}
+G={jokers={cards={plain,foil}}}
+Runtime.prepare_controls(wheel);Runtime.prepare_controls(hex)
+assert(#wheel.eligible_strength_jokers==1 and wheel.eligible_strength_jokers[1]==plain)
+assert(#hex.eligible_editionless_jokers==1 and hex.eligible_editionless_jokers[1]==plain)
+G.jokers.cards={};Runtime.prepare_controls(wheel)
+assert(next(wheel.eligible_strength_jokers)==nil,'Native use-button checks require an empty table, not nil')
+print('PASS card runtime: tag provenance and restored consumable eligibility caches without gameplay updates')

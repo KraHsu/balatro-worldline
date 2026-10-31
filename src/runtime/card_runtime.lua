@@ -5,6 +5,21 @@ local Runtime = {SCHEMA = 1}
 local fields = {'from_tag'}
 local allowed = {from_tag = true}
 
+-- Native can_use_consumeable reads these caches while building highlighted
+-- controls, before the first Card:update after a load. Rebuild references from
+-- the restored inventory; never serialize live card references or run update.
+function Runtime.prepare_controls(card)
+    local name=card.ability and card.ability.name
+    local field=name=='The Wheel of Fortune' and 'eligible_strength_jokers'
+        or (name=='Ectoplasm' or name=='Hex') and 'eligible_editionless_jokers'
+    if not field then return end
+    local eligible={}
+    for _,joker in pairs(G.jokers and G.jokers.cards or {})do
+        if joker.ability.set=='Joker' and not joker.edition then eligible[#eligible+1]=joker end
+    end
+    card[field]=eligible
+end
+
 function Runtime.validate(entry)
     if entry == nil then return true end -- Older archives did not record this.
     if type(entry) ~= 'table' then return nil, 'invalid_card_runtime' end

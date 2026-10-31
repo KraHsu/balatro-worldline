@@ -20,6 +20,8 @@ Bookmarks can name important checkpoints. A fold preserves its endpoint cards an
 
 **Ctrl+Z** undoes the last irreversible operation; selecting a card does not count. Undo retains already visited branches. The first ordinary Undo does not add WorldLine's seeded restriction. In an unseeded run, another consecutive Undo asks for confirmation: press again within two seconds to confirm. Seeded runs need no confirmation.
 
+Fast inputs are queued until the previous animation finishes so each completed operation has its own Undo point. The queue keeps the original card targets and selection; stale inputs are cancelled with a short on-screen notice. Undo retains up to 200 completed operations in this session, not across restarts. An unavailable Undo shows its reason; missing history from older versions cannot be reconstructed.
+
 Using the graph or its restore/share/archive features marks the run seeded, following vanilla achievement/discovery restrictions. Passive recording and changing automatic-creation settings do not. Restoring an old checkpoint cannot remove a restriction already applied.
 
 ## Local data

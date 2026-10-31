@@ -18,19 +18,21 @@ local I18n = module("i18n")
 local Film = module('film')
 local FilmHost=module('film_host')
 Snapshot.install_hand_order()
+module('card_visuals').install()
 mod.config = mod.config or {}
 if mod.config.auto_create == nil then mod.config.auto_create = true end
 mod.config.film=mod.config.film or {}
 
 local API = {
     -- Archive compatibility is independent of the installed patch version.
-    VERSION = "0.2.0", CODE_VERSION = "0.6.4", tree = nil, busy = false, restoring = false,
+    VERSION = "0.2.0", CODE_VERSION = "0.6.5", tree = nil, busy = false, restoring = false,
     detached = false, pending_actions = {}, dirty = false, unsaved = {},
     save_clock = 0, retry_clock = 0, status = "", last_error = nil,
     frame_serial = 0, observe_clock = 0, phase_diverged = false,
     snapshot = Snapshot, core = Tree, private_worldline = false, phase_choices = {}
 }
 WORLDLINE = API
+API.input_queue=module('input_queue').new(API)
 API.storage = Storage.new(Codec, Tree, JSON, love.filesystem)
 local new_tree
 local undo_confirmation
@@ -38,6 +40,12 @@ local save_requests, save_ticket = {}, 0
 
 function API.text(zh, en)
     return I18n.text(G and G.SETTINGS and G.SETTINGS.language or 'en-us', zh, en)
+end
+
+function API.undo_input_notice(key)
+    local value=API.text(nil,key)
+    API.status=value
+    API.undo_notice={text=value,until_time=love.timer.getTime()+2}
 end
 if API.storage.set_text then API.storage:set_text(API.text) end
 
@@ -93,6 +101,7 @@ local function report(message)
     local repeated = API.last_error == tostring(message)
     API.last_error = tostring(message)
     API.status = API.last_error
+    API.undo_input_notice(API.last_error)
     if sendWarnMessage and not repeated then sendWarnMessage(API.last_error, "WorldLine") end
     return nil, API.last_error
 end
@@ -385,6 +394,9 @@ local function mark_live()
 end
 
 local capture_scope
+function API.invalidate_input_boundary()
+    if capture_scope then capture_scope={}end
+end
 local function capture(allow_overlay)
     if API.tree and API.game_ref == G.GAME then
         if Progress.apply_live(API, G.GAME) then API.dirty = true end
@@ -585,6 +597,12 @@ end
 
 function API.before_open()
     if API.busy or Snapshot.restoring then API.open_when_ready = true; return false end
+    if API.input_queue:count()>0 then
+        API.open_when_ready=true
+        API.undo_input_notice('Input queued; waiting for animation')
+        if G.OVERLAY_MENU and G.FUNCS.exit_overlay_menu then G.FUNCS.exit_overlay_menu()end
+        return false
+    end
     if API.should_record() then
         if Snapshot.is_stable(true) then Undo.update(API, true); Hooks.poll(API); flush_pending(true) end
         if #API.pending_actions > 0 or not Snapshot.is_stable(true) then
@@ -685,8 +703,12 @@ local function queue_restore(tree, id, use_resume, undo_entry)
 end
 
 function API.can_undo()
+    if API.input_queue:count()>0 then return false,API.text(nil,'Input queued; waiting for animation')end
     local entry, action = Undo.peek()
     if not entry or entry.tree ~= API.tree then
+        local boundary=Undo.boundary_reason()
+        if boundary then return false,API.text(nil,boundary=='history_limit' and 'Undo history limit reached'
+            or 'Undo history ends at an unrecorded action')end
         return false, API.text('没有可撤回的操作', 'No action to undo')
     end
     if API.busy or API.restoring or Snapshot.restoring or Undo.has_pending()
@@ -1330,7 +1352,9 @@ local function update(dt)
             if not API.save_now(true, true, true) then API.retry_clock = 5 end
         end
     end
-    if API.open_when_ready and (G.STAGE ~= G.STAGES.RUN or Snapshot.is_stable(false)) then API.open() end
+    if API.input_queue:count()>0 and not Undo.has_pending() and API.input_queue:update()then return end
+    if API.open_when_ready and API.input_queue:count()==0
+        and (G.STAGE ~= G.STAGES.RUN or Snapshot.is_stable(false)) then API.open() end
 end
 
 function API.film_active() return API.film_runtime and API.film_runtime.active or false end

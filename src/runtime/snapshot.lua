@@ -486,6 +486,7 @@ local function restore_selections(snapshot)
             area.highlighted = {}
             for _, card in ipairs(area.cards) do
                 restore_card_runtime(snapshot, card)
+                CardRuntime.prepare_controls(card)
                 cards[identity(card)] = card
                 card.highlighted = false
                 if card.children and card.children.use_button then

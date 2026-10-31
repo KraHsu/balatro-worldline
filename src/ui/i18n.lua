@@ -7,7 +7,7 @@ local function catalog_data(name)
     return dofile('src/localization/' .. name .. '.lua')
 end
 local data = catalog_data('catalog')
-for _,name in ipairs({'extra','film','film_export','film_controls'}) do
+for _,name in ipairs({'extra','film','film_export','film_controls','undo'}) do
 local extra = catalog_data(name)
 for locale, entries in pairs(extra.catalog) do
     assert(data.catalog[locale], 'Unsupported Worldline locale: ' .. locale)
