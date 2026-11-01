@@ -178,6 +178,7 @@ function get_current_pool()
     return G.P_CENTERS and G.P_CENTERS.j_pool_reference and G.P_CENTERS.j_pool_reference.unlocked
 end
 Snapshot.install_hand_order=function()end
+Snapshot.install_visual_events=function()end
 local app = dofile("src/main.lua")
 local function persisted(id)
     -- An accepted async save becomes durable only after the write ACK. Tests

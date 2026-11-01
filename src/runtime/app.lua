@@ -18,6 +18,7 @@ local I18n = module("i18n")
 local Film = module('film')
 local FilmHost=module('film_host')
 Snapshot.install_hand_order()
+Snapshot.install_visual_events()
 module('card_visuals').install()
 mod.config = mod.config or {}
 if mod.config.auto_create == nil then mod.config.auto_create = true end
@@ -25,7 +26,7 @@ mod.config.film=mod.config.film or {}
 
 local API = {
     -- Archive compatibility is independent of the installed patch version.
-    VERSION = "0.2.0", CODE_VERSION = "0.6.6", tree = nil, busy = false, restoring = false,
+    VERSION = "0.2.0", CODE_VERSION = "0.6.7", tree = nil, busy = false, restoring = false,
     detached = false, pending_actions = {}, dirty = false, unsaved = {},
     save_clock = 0, retry_clock = 0, status = "", last_error = nil,
     frame_serial = 0, observe_clock = 0, phase_diverged = false,

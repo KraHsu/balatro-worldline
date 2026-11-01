@@ -48,6 +48,8 @@ Native callbacks record ordered inputs, including the global playing-card order 
 
 The session input queue retains up to 16 pending player callbacks, their card references and hand selections. It dispatches one at a stable boundary, after the preceding action has been finalized. Changed cards, rounds or blinds cancel stale inputs. Native event-manager continuations bypass this queue and remain part of their parent action. The queue is transient and does not alter RNG or reconstruct missing legacy inputs.
 
+The event policy identifies native `juice_card_until` pulses by their scheduling context. These recurring cosmetic events do not prevent stable checkpoints; otherwise DNA's first-hand pulse could block the player action needed to end that pulse. Their native scheduling and callbacks remain untouched. Unidentified nonblocking events still count as pending gameplay work.
+
 Branch reuse compares children of the current node. Both operation order and complete seeded gameplay state must match. A matching summary alone is insufficient. Incomplete historical evidence creates a separate branch.
 
 ## Restore and seeded behavior

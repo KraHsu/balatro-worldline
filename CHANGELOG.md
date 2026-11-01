@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.7
+
+- Prevent repeating native card-pulse events, such as DNA waiting for the first played hand, from indefinitely blocking stable snapshots and queued inputs.
+- Mark only the events scheduled by native `juice_card_until`; unrelated nonblocking events still prevent recording at an unsafe boundary.
+- Leave native pulse callbacks, timing, visual effects and RNG behavior unchanged.
+
 ## 0.6.6
 
 - Store the deck ID in worldline metadata and summaries instead of copying the live Steamodded Back object, preventing `metadata[deck][inject]` function serialization errors when automatic recording starts.

@@ -367,6 +367,12 @@ assert(not Snapshot.capture())
 G.CONTROLLER.locks.use = nil
 G.E_MANAGER.queues.base = { { trigger = "after", blocking = false, blockable = false } }
 assert(not Snapshot.capture())
+G.E_MANAGER.queues.base = { { trigger = 'after', timer = 'REAL', blocking = false, blockable = false } }
+assert(not Snapshot.capture(), 'Unidentified nonblocking events can still change gameplay')
+G.E_MANAGER.queues.base[1]._worldline_visual = 'juice_card_until'
+assert(Snapshot.capture(), 'An identified repeating card pulse does not prevent stable snapshots')
+G.E_MANAGER.queues.base[1].blocking = true
+assert(not Snapshot.capture(), 'A visual marker never bypasses actual blocking events')
 
 setup("SELECTING_HAND")
 good = assert(Snapshot.capture())

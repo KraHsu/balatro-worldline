@@ -14,6 +14,7 @@ local paths = {
     compositor = "ui/compositor.lua",
     details = "ui/details.lua",
     diff = "ui/diff.lua",
+    event_policy = "runtime/event_policy.lua",
     file_dialog = "platform/file_dialog.lua",
     file_dialog_windows = "platform/file_dialog_windows.lua",
     file_dialog_worker = "workers/file_dialog.lua",

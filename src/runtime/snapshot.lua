@@ -9,6 +9,8 @@ end
 local CardRuntime = Loader.load('card_runtime')
 local HandOrder = Loader.load('hand_order')
 local Snapshot = {restoring = false}
+local EventPolicy = Loader.load('event_policy')
+Snapshot.install_visual_events = EventPolicy.install
 local Cashout = Loader.load('cashout')
 Snapshot.install_cashout_capture=Cashout.install
 Snapshot.install_hand_order=HandOrder.install
@@ -151,7 +153,7 @@ local function queue_busy(allow_overlay)
                 local persistent = event.trigger == "immediate"
                     and event.blocking == false and event.blockable == false
                 local overlay_event = allow_overlay and event.created_on_pause
-                if not event.complete and not persistent and not overlay_event then
+                if not event.complete and not persistent and not overlay_event and not EventPolicy.is_visual(event) then
                     return true
                 end
             end
