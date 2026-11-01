@@ -102,4 +102,9 @@ local without_registry = Details.from_snapshot(snapshot)
 assert(without_registry.jokers[1].key == 'j_joker' and without_registry.total_cards == 2,
     'details work without native registries or gameplay objects')
 assert(calls == 0)
+local live_back = {key = 'b_blue', inject = function() error('Never run a deck callback for details') end}
+local native_back = Details.from_snapshot({save = {GAME = {selected_back_key = live_back}}, extra = {}},
+    {deck = {key = 'b_red'}})
+assert(native_back.deck == 'b_blue' and type(live_back.inject) == 'function')
+assert(Codec.encode(native_back, TEST_JSON), 'Deck presentation must contain only its ID')
 print('PASS details: snapshot-only inventory, deck/hand statistics, native labels, legacy fallback, no source mutation')

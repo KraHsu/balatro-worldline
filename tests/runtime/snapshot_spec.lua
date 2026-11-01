@@ -107,12 +107,14 @@ local function setup(state)
     end
     G.E_MANAGER = EventManager()
     SMODS = { Scoring_Calculations = { multiply = {} } }
+    G.P_CENTERS.b_red = game_object({key = 'b_red'})
+    G.P_CENTERS.b_red.key = 'b_red'
     G.GAME = {
         pseudorandom = { seed = "TREESEED", hashed_seed = 0.17, shuffle = 0.123 },
         round_resets = {}, current_round = { dollars = 12 }, STOP_USE = 0, tag_tally = 7,
         tags = {},
         blind = game_object({ name = "Small Blind" }),
-        selected_back = game_object({ name = "Red Deck" }),
+        selected_back = game_object({ name = "Red Deck" }), selected_back_key = G.P_CENTERS.b_red,
         current_scoring_calculation = game_object({ key = "multiply", config = {} })
     }
     G.hand = make_area("hand", { make_card(), make_card() })
@@ -177,6 +179,7 @@ local function setup(state)
         self.GAME, self.STATE = save.GAME, save.STATE
         self.GAME.blind = game_object(save.BLIND)
         self.GAME.selected_back = game_object(save.BACK)
+        self.GAME.selected_back_key = self.P_CENTERS.b_red
         self.GAME.current_scoring_calculation = game_object(save.SCORING_CALC)
         self.GAME.tag_tally = self.GAME.tag_tally + 1
         self.GAME.current_round.dollars = self.GAME.current_round.dollars + 40
@@ -577,4 +580,7 @@ assert(Snapshot.restore(good));assert(Snapshot.update())
 local restored={};for key in pairs(G.GAME.hands)do restored[#restored+1]=key end
 for i,key in ipairs(good.extra.poker_hand_order)do assert(restored[i]==key)end
 assert(G.GAME.hands.Pair.level==7 and good.save.GAME.hands.Pair.level==7)
+assert(good.save.GAME.selected_back_key == '"MANUAL_REPLACE"')
+assert(G.GAME.selected_back_key == G.P_CENTERS.b_red and G.GAME.selected_back_key.key == 'b_red',
+    'Restore retains the native reconstructed deck reference instead of its object-culling marker')
 print("PASS snapshot: stable states, all five SMODS packs, selection/order, RNG restore, no save/open side effects, import rejection")

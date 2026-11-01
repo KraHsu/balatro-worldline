@@ -56,6 +56,8 @@ Restore validates the archive and snapshot, then rebuilds the native scene at a 
 
 Before restoring highlighted consumable controls, the card adapter derives eligibility caches from the restored Joker inventory without running gameplay updates. A separate visual adapter synchronizes copied Planet discovery-bypass flags and sprite positions without consuming RNG, changing card identity or modifying profile discoveries.
 
+Deck metadata and summaries store only the Back key. Native `GAME.selected_back_key` can be a Steamodded object with methods such as `inject`; restore retains the reference reconstructed by native `start_run`, rather than applying its serialized object placeholder. Older object-shaped presentation fields are normalized on import without rewriting their gameplay snapshots.
+
 The progress adapter keeps the seeded-run restriction monotonic. Passive recording and ordinary single Undo retain vanilla eligibility; explicit worldline features and confirmed continuous Undo apply the restriction. Candidate-pool adapters temporarily use the root profile conditions and restore the real profile afterwards.
 
 Imported files are JSON data, never executable Lua. Native profiles, discoveries and cloud history are not rewound. Compatibility is tested for the documented engine/loader baseline, not every possible action sequence or third-party mod.

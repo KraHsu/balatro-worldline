@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.6
+
+- Store the deck ID in worldline metadata and summaries instead of copying the live Steamodded Back object, preventing `metadata[deck][inject]` function serialization errors when automatic recording starts.
+- Read older object-shaped deck metadata and summaries as their deck IDs, restoring deck previews and localized names without changing gameplay snapshots or RNG state.
+- Preserve the native reconstructed deck reference during Undo and convergence instead of replacing it with the save format's object placeholder.
+- Keep strict rejection of unsupported values elsewhere. Existing archives need no manual migration.
+
 ## 0.6.5
 
 - Queue fast player inputs until the previous animation reaches a stable boundary, preserving a separate Undo point for each completed action instead of clearing the history.

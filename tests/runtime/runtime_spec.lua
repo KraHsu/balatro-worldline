@@ -958,4 +958,31 @@ do
     browser_error=true;rows,err=app.backup_rows(true);assert(rows==nil and err=='reader failure')
     app.archive_browser=nil
 end
+-- Reproduce the native object-shaped selected_back_key with its inject method.
+-- The real snapshot adapter culls native Objects; the root metadata and summary
+-- must independently keep just the deck ID instead of traversing that object.
+do
+    local native_capture = Snapshot.capture
+    local injected = false
+    local center = {key = 'b_red', inject = function() injected = true end}
+    Snapshot.capture = function(...)
+        local value, err = native_capture(...)
+        if value and type(value.save.GAME.selected_back_key) == 'table' then
+            value.save.GAME.selected_back_key = '"MANUAL_REPLACE"'
+        end
+        return value, err
+    end
+    G.FUNCS.start_run({})
+    G.GAME.selected_back_key = center
+    G:update(0.6)
+    assert(app.has_public_worldline() and app.tree.metadata.deck == 'b_red' and not app.last_error)
+    assert(app.tree:get(1).summary.deck == 'b_red' and not G.GAME.seeded)
+    G.FUNCS.select_blind(); G:update(0.6)
+    G.FUNCS.play_cards_from_highlighted(); G:update(0.6)
+    assert(not app.last_error and app.tree:get(2).summary.deck == 'b_red' and app.can_undo())
+    assert(persisted(app.tree.metadata.run_id).metadata.deck == 'b_red')
+    assert(G.GAME.selected_back_key == center and not injected,
+        'Recording deck identity never replaces the live deck or invokes its methods')
+    Snapshot.capture = native_capture
+end
 print("PASS runtime: worldline phases/resume, passive auto creation/config, private Undo, sharing/restart, native eligibility, recovery, archive editing")

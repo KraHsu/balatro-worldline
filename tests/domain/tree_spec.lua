@@ -1,5 +1,36 @@
 local Tree = dofile("src/domain/tree.lua")
 local function state(dollars) return {seed = "SAME", save = {GAME = {dollars = dollars}}} end
+
+-- Steamodded Back objects own callbacks such as inject. Only their key is
+-- presentation metadata; strict cloning of actual gameplay data stays intact.
+do
+    local called = false
+    local center = {key = 'b_blue', inject = function() called = true end, pos = {x = 0, y = 2}}
+    assert(Tree.deck_key(center) == 'b_blue' and Tree.deck_key('b_red') == 'b_red')
+    assert(Tree.deck_key('"MANUAL_REPLACE"') == nil and Tree.deck_key({}) == nil)
+    local t = Tree.new(state(4), {seed = 'SAME', run_id = 'deck_identity', deck = center})
+    assert(t.metadata.deck == 'b_blue' and type(center.inject) == 'function' and not called)
+    t:commit({kind = 'select_blind'}, state(3), {deck = center})
+    assert(t:get(2).summary.deck == 'b_blue' and not called)
+    local legacy = t:export()
+    legacy.metadata.deck = {key = 'b_blue', pos = {x = 0, y = 2}}
+    legacy.nodes[2].summary.deck = {key = 'b_blue', pos = {x = 0, y = 2}}
+    legacy.resume = {parent = 2, snapshot = state(2), summary = {deck = {key = 'b_blue'}}}
+    local codec = dofile('src/storage/codec.lua')
+    local gameplay = codec.encode(legacy.nodes[2].snapshot, TEST_JSON)
+    local imported = assert(Tree.import(legacy))
+    assert(imported.metadata.deck == 'b_blue' and imported:get(2).summary.deck == 'b_blue')
+    assert(imported.resume.summary.deck == 'b_blue' and type(legacy.metadata.deck) == 'table',
+        'Normalize detached legacy metadata, never the source archive')
+    assert(codec.encode(imported:get(2).snapshot, TEST_JSON) == gameplay
+        and imported.resume.snapshot.save.GAME.dollars == 2, 'Do not rewrite gameplay snapshots')
+    assert(not pcall(Tree.new, state(4), {seed = 'SAME', run_id = 'bad_callback', callback = center.inject}),
+        'Callbacks outside deck identity remain invalid')
+    local before = t.next_id
+    assert(not pcall(t.commit, t, {kind = 'bad', callback = center.inject}, state(3), {deck = center}))
+    assert(t.next_id == before and not called, 'Invalid actions still fail before mutating the tree')
+end
+
 local initial = state(4)
 local tree = Tree.new(initial, {seed = "SAME", run_id = "unit"})
 initial.save.GAME.dollars = 100

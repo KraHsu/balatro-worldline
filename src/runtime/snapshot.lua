@@ -524,7 +524,8 @@ local function restore_selections(snapshot)
 end
 
 local runtime_fields = {
-    ["blind"] = true, ["selected_back"] = true, ["current_scoring_calculation"] = true,
+    ["blind"] = true, ["selected_back"] = true, ["selected_back_key"] = true,
+    ["current_scoring_calculation"] = true,
     ["tags"] = true, ["round_resets.blind"] = true
 }
 

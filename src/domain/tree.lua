@@ -5,6 +5,31 @@ Tree.MAX_NODES = 10000
 Tree.MAX_ID = 9007199254740991
 Tree.MAX_BOOKMARKS, Tree.MAX_FOLDS = 1024, 256
 
+-- Native selected_back_key may be a Steamodded Back object rather than a
+-- string. Metadata and presentation need its identity, never its callbacks.
+function Tree.deck_key(value)
+    if type(value) == 'table' then value = value.key end
+    if type(value) == 'string' and value ~= '' and value ~= '"MANUAL_REPLACE"' then return value end
+end
+
+local function with_deck_key(record)
+    if type(record.deck) ~= 'table' then return record end
+    local key = assert(Tree.deck_key(record.deck), 'Invalid deck identifier')
+    local result = {}
+    for field, value in pairs(record) do result[field] = value end
+    result.deck = key
+    return result
+end
+
+local function with_summary_deck(record)
+    local summary = with_deck_key(record.summary)
+    if summary == record.summary then return record end
+    local result = {}
+    for field, value in pairs(record) do result[field] = value end
+    result.summary = summary
+    return result
+end
+
 local function clone(value, ancestors, depth)
     local kind = type(value)
     if kind ~= "table" then
@@ -346,7 +371,7 @@ end
 function Tree.new(snapshot, metadata)
     assert(valid_metadata(metadata), "Invalid run metadata")
     assert(type(snapshot) == "table" and snapshot.seed == metadata.seed, "Checkpoint seed mismatch")
-    metadata = clone(metadata)
+    metadata = clone(with_deck_key(metadata))
     if metadata.name ~= nil then metadata.name = label_text(metadata.name) end
     return setmetatable({root = 1, current = 1, next_id = 2, structure_revision = 0,
         annotation_revision = 0, metadata_revision = 0, _node_count = 1,
@@ -669,7 +694,7 @@ function Tree:commit(action, snapshot, summary, matcher)
     assert(self.next_id < Tree.MAX_ID, 'Checkpoint ID limit reached; history was not truncated')
     -- Clone before mutating the tree, so a failed snapshot cannot leave half a node.
     local node = {id = id, parent = parent.id, children = {}, action = clone(action),
-        snapshot = clone(snapshot), summary = clone(summary or {})}
+        snapshot = clone(snapshot), summary = clone(with_deck_key(summary or {}))}
     self.nodes[id] = node
     parent.children[#parent.children + 1] = id
     self.next_id, self.current = id + 1, id
@@ -801,7 +826,7 @@ local function import(payload)
             and #node.action.kind <= 128 and type(node.summary) == "table", "Invalid action data")
         assert(type(node.snapshot) == "table" and node.snapshot.seed == payload.metadata.seed,
             "Checkpoint seed mismatch")
-        nodes[node.id] = clone(node)
+        nodes[node.id] = clone(with_summary_deck(node))
     end
     assert(nodes[1] and nodes[1].parent == 0 and nodes[payload.current], "Invalid root or current checkpoint")
     local referenced = {[1] = true}
@@ -824,10 +849,10 @@ local function import(payload)
         assert(type(value) == "table" and value.parent == payload.current and nodes[value.parent]
             and type(value.snapshot) == "table" and value.snapshot.seed == payload.metadata.seed
             and type(value.summary) == "table", "Invalid in-phase resume checkpoint")
-        resume = clone(value)
+        resume = clone(with_summary_deck(value))
     end
     local notes = validate_annotations(payload.annotations, nodes)
-    local metadata = clone(payload.metadata)
+    local metadata = clone(with_deck_key(payload.metadata))
     if metadata.name ~= nil then metadata.name = label_text(metadata.name) end
     return setmetatable({root = 1, current = payload.current, next_id = payload.next_id, structure_revision = 0,
         annotation_revision = 0, metadata_revision = 0, _node_count = #payload.nodes,

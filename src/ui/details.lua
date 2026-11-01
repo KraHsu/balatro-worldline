@@ -8,6 +8,7 @@ else
     Loader = dofile('src/loader.lua')
 end
 local Choices = Loader.load('choices')
+local Tree = Loader.load('tree')
 local Details = {}
 
 local function finite(value)
@@ -99,7 +100,7 @@ function Details.from_snapshot(snapshot, base_summary)
     result.blind_key = type(blind.config_blind) == 'string' and blind.config_blind ~= '' and blind.config_blind
         or result.blind_key
     result.blind_name = name('Blind', result.blind_key, blind.name or result.blind_name)
-    result.deck = game.selected_back_key or back.key or result.deck
+    result.deck = Tree.deck_key(game.selected_back_key) or Tree.deck_key(back.key) or Tree.deck_key(result.deck)
     result.deck_name = name('Back', result.deck, back.name or result.deck_name)
     result.stake, result.reroll_cost = number(game.stake, result.stake), number(round.reroll_cost, result.reroll_cost)
     result.joker_limit, result.consumable_limit = limit(areas.jokers) or result.joker_limit,

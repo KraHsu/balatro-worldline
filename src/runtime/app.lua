@@ -25,7 +25,7 @@ mod.config.film=mod.config.film or {}
 
 local API = {
     -- Archive compatibility is independent of the installed patch version.
-    VERSION = "0.2.0", CODE_VERSION = "0.6.5", tree = nil, busy = false, restoring = false,
+    VERSION = "0.2.0", CODE_VERSION = "0.6.6", tree = nil, busy = false, restoring = false,
     detached = false, pending_actions = {}, dirty = false, unsaved = {},
     save_clock = 0, retry_clock = 0, status = "", last_error = nil,
     frame_serial = 0, observe_clock = 0, phase_diverged = false,
@@ -312,12 +312,13 @@ local function summary()
     local blind = game.blind or {}
     local blind_config = blind.config and blind.config.blind or {}
     local deck = game.selected_back or {}
-    local deck_name, blind_name = deck.name or game.selected_back_key, blind.name or blind_config.name
+    local deck_key = Tree.deck_key(game.selected_back_key) or Tree.deck_key(deck.effect and deck.effect.center)
+    local deck_name, blind_name = deck.name or deck_key, blind.name or blind_config.name
     if type(deck.get_name) == 'function' then
         local ok, name = pcall(deck.get_name, deck)
         if ok and type(name) == 'string' then deck_name = name end
-    elseif type(localize) == 'function' and game.selected_back_key then
-        local ok, name = pcall(localize, {type = 'name_text', set = 'Back', key = game.selected_back_key})
+    elseif type(localize) == 'function' and deck_key then
+        local ok, name = pcall(localize, {type = 'name_text', set = 'Back', key = deck_key})
         if ok and type(name) == 'string' then deck_name = name end
     end
     if type(localize) == 'function' and (blind_config.key or blind.key) then
@@ -329,7 +330,7 @@ local function summary()
         round = game.round or 0, dollars = game.dollars or 0, money = game.dollars or 0,
         hands_left = round.hands_left or 0, discards_left = round.discards_left or 0,
         joker_count = #jokers, jokers = jokers,
-        deck = game.selected_back_key, deck_name = deck_name,
+        deck = deck_key, deck_name = deck_name,
         stake = game.stake or 1, blind_key = blind_config.key or blind.key,
         blind_name = blind_name,
         hand_count = G.hand and #G.hand.cards or 0,
@@ -1169,7 +1170,9 @@ new_tree = function(private_worldline, allow_overlay, pool_environment)
         run_id = new_id(), seed = snapshot.seed, created_at = os.time(),
         game_version = G.VERSION, smods_version = SMODS.version,
         tree_version = API.VERSION, profile = tostring(G.SETTINGS.profile),
-        deck = G.GAME.selected_back_key, stake = G.GAME.stake,
+        deck = Tree.deck_key(G.GAME.selected_back_key)
+            or Tree.deck_key(G.GAME.selected_back and G.GAME.selected_back.effect and G.GAME.selected_back.effect.center),
+        stake = G.GAME.stake,
         pool_environment = copy(pool_environment or PoolEnvironment.capture(G.P_CENTERS))
     }
     API.tree = Tree.new(snapshot, metadata)
