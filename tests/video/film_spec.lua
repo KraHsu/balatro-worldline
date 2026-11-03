@@ -40,6 +40,11 @@ fails(function()Film.options{output_dir='C:/bad\npath'}end)
 local changed={save={GAME={dollars=6,pseudorandom={seed='TEST',shop=0.5}},cardAreas={hand={cards={}}}},extra={state='SHOP'}}
 assert(not Film.verify(changed,snap),'Divergence cannot be hidden by injecting the next checkpoint')
 changed.save.GAME.dollars=5;assert(Film.verify(changed,snap))
+changed.save.GAME.viewed_back='\"MANUAL_REPLACE\"'
+assert(Film.verify(changed,snap),'A discarded menu Back preview is not replay divergence')
+changed.save.BACK={name='Blue Deck'}
+assert(not Film.verify(changed,snap),'The actual selected deck must still match')
+changed.save.BACK=nil
 changed.save.GAME.pseudorandom.shop=0.6;assert(not Film.verify(changed,snap))
 changed.save.GAME.pseudorandom.shop=0.5
 changed.save.GAME.orbital_choices={Small='Pair'}

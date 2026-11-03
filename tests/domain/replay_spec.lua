@@ -18,6 +18,11 @@ s.save.GAME.worldline_run_id='different';s.save.GAME.worldline_node_id=99
 s.save.cardAreas.jokers.cards[1].highlighted=true
 a.label='商店';a.choices[1].name='小丑牌';a.choices[1].atlas='new_texture'
 assert(Replay.matches(action,snapshot,a,s),'UI state, discovery eligibility and localized names do not create a route')
+s.save.GAME.viewed_back = '\"MANUAL_REPLACE\"'
+assert(Replay.matches(action,snapshot,a,s), 'a menu Back placeholder cannot force a new route')
+s.save.BACK = {name = 'Blue Deck'}
+assert(not Replay.matches(action,snapshot,a,s), 'the actual selected deck remains gameplay state')
+s.save.BACK = nil
 s.save.GAME.pseudorandom.shop=.24
 assert(not Replay.matches(action,snapshot,a,s),'seeded random stream position is gameplay state')
 s.save.GAME.pseudorandom.shop=.23;s.extra.counters.sort_id=41

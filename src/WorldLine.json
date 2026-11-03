@@ -8,7 +8,7 @@
   "prefix": "worldline",
   "main_file": "main.lua",
   "icon_path": "modicon.png",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "dependencies": [
     "Steamodded (>=26.1002.0)",
     "Lovely (>=0.10.0)"

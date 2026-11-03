@@ -589,4 +589,80 @@ assert(G.GAME.hands.Pair.level==7 and good.save.GAME.hands.Pair.level==7)
 assert(good.save.GAME.selected_back_key == '"MANUAL_REPLACE"')
 assert(G.GAME.selected_back_key == G.P_CENTERS.b_red and G.GAME.selected_back_key.key == 'b_red',
     'Restore retains the native reconstructed deck reference instead of its object-culling marker')
+-- Opening native run setup/collection leaves a viewed Back in GAME. Its save
+-- marker must never win over the reconstructed selected Back in set_sprites.
+setup('SELECTING_HAND')
+G.GAME.viewed_back = game_object({name = 'Blue Deck'})
+good = assert(Snapshot.capture())
+assert(good.save.GAME.viewed_back == '\"MANUAL_REPLACE\"')
+local native_load = G.start_run
+local function card_back_args()
+    return (G.GAME.viewed_back or G.GAME.selected_back).effect.center.sprite_args
+end
+G.start_run = function(self, args)
+    self.GAME = args.savetext.GAME
+    self.GAME.selected_back = {effect = {center = {sprite_args = 'native back'}}}
+    assert(card_back_args() == 'native back', 'card construction must not see a preview marker')
+    return native_load(self, args)
+end
+assert(Snapshot.restore(good));assert(Snapshot.update())
+assert(G.GAME.viewed_back == nil, 'finalization must not reinsert the preview marker')
+G.GAME.selected_back.effect = {center = {sprite_args = 'loaded back'}}
+assert(card_back_args() == 'loaded back', 'later card creation also needs a real Back')
+assert(good.save.GAME.viewed_back == '\"MANUAL_REPLACE\"', 'old archives stay immutable')
+assert(G.GAME.pseudorandom.shuffle == good.save.GAME.pseudorandom.shuffle)
+
+-- Continue uses the same load adapter without editing the supplied save or
+-- dropping genuine gameplay data, including the selected deck and named RNG.
+local args = {savetext = good.save, challenge = 'unchanged'}
+local prepared = Snapshot.prepare_native_load(args)
+assert(prepared ~= args and prepared.savetext ~= good.save)
+assert(prepared.savetext.GAME ~= good.save.GAME and prepared.savetext.GAME.viewed_back == nil)
+assert(prepared.savetext.GAME.pseudorandom == good.save.GAME.pseudorandom)
+assert(prepared.savetext.BACK == good.save.BACK and prepared.challenge == 'unchanged')
+assert(good.save.GAME.viewed_back == '\"MANUAL_REPLACE\"')
+assert(Snapshot.prepare_native_load(nil) == nil)
+
+-- Native start_run eases the *previous* blind before constructing the new one.
+-- A failure after assigning the serialized GAME must not poison backup loading.
+setup('SELECTING_HAND')
+G.GAME.blind.change_colour = function() end
+good = assert(Snapshot.capture())
+G.GAME.current_round.dollars = 91
+native_load = G.start_run
+local attempts = 0
+G.start_run = function(self, options)
+    attempts = attempts + 1
+    if self.GAME.blind then self.GAME.blind:change_colour() end
+    if attempts == 1 then
+        self.GAME = options.savetext.GAME
+        error('failure during native card construction')
+    end
+    return native_load(self, options)
+end
+assert(Snapshot.restore(good))
+restored, failure = Snapshot.update()
+assert(not restored and failure:find('restore_failed_rolled_back'))
+assert(not failure:find('rollback_failed') and attempts == 2)
+assert(G.GAME.current_round.dollars == 91 and not Snapshot.restoring)
+
+-- If both loads fail, discard even no_delete events from partial scenes before
+-- building the menu. Only the new menu's events may execute afterwards.
+setup('SELECTING_HAND')
+good = assert(Snapshot.capture())
+local menu_event = {trigger = 'after', menu = true}
+G.start_run = function(self, options)
+    self.GAME = options.savetext.GAME
+    self.E_MANAGER.queues.base = {{no_delete = true, func = function() error('abandoned scene') end}}
+    error('both native loads fail')
+end
+G.main_menu = function(self)
+    assert(#self.E_MANAGER.queues.base == 0, 'partial scene events must not leak into the menu')
+    self.E_MANAGER.queues.base = {menu_event}
+    self.STAGE = 2
+end
+restored, failure = Snapshot.restore(good)
+assert(not restored and failure:find('rollback_failed') and not Snapshot.restoring)
+assert(G.STAGE == 2 and G.E_MANAGER.queues.base[1] == menu_event)
+assert(not G.F_NO_SAVING and not G.CONTROLLER.locked)
 print("PASS snapshot: stable states, all five SMODS packs, selection/order, RNG restore, no save/open side effects, import rejection")

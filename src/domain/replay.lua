@@ -21,7 +21,8 @@ local function ignored(context, key, mode)
     end
     return context == 'counters' and key == 'ID'
         or context == 'extra' and (key == 'selected' or key=='cashout')
-        or context == 'game' and (key == 'seeded' or key == 'worldline_run_id' or key == 'worldline_node_id')
+        or context == 'game' and (key == 'seeded' or key == 'worldline_run_id' or key == 'worldline_node_id'
+            or key == 'viewed_back') -- menu preview; the selected deck is saved in BACK
         or context == 'card' and (key == 'highlighted' or key == 'unique_val__saved_ID')
 end
 local function equal(a, b, mode, context)

@@ -26,7 +26,7 @@ mod.config.film=mod.config.film or {}
 
 local API = {
     -- Archive compatibility is independent of the installed patch version.
-    VERSION = "0.2.0", CODE_VERSION = "0.6.7", tree = nil, busy = false, restoring = false,
+    VERSION = "0.2.0", CODE_VERSION = "0.6.8", tree = nil, busy = false, restoring = false,
     detached = false, pending_actions = {}, dirty = false, unsaved = {},
     save_clock = 0, retry_clock = 0, status = "", last_error = nil,
     frame_serial = 0, observe_clock = 0, phase_diverged = false,
@@ -1488,7 +1488,7 @@ function Game:start_run(args, ...)
         API.bootstrap_pending, API.attach_attempted = true, nil
         Hooks.reset()
     end
-    return original_start(self, args, ...)
+    return original_start(self, Snapshot.prepare_native_load(args), ...)
 end
 
 -- The UI callbacks delete the old scene before invoking Game:start_run.

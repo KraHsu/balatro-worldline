@@ -60,6 +60,8 @@ Before restoring highlighted consumable controls, the card adapter derives eligi
 
 Deck metadata and summaries store only the Back key. Native `GAME.selected_back_key` can be a Steamodded object with methods such as `inject`; restore retains the reference reconstructed by native `start_run`, rather than applying its serialized object placeholder. Older object-shaped presentation fields are normalized on import without rewriting their gameplay snapshots.
 
+The native load boundary discards `GAME.viewed_back`, a menu/collection preview that the save format culls but the run loader never reconstructs. Continue and checkpoint loads use the real selected deck from `BACK`; source files remain untouched. Branch matching and video verification ignore only this preview field, while the selected deck and seeded gameplay remain strict. Backup loading also tolerates an unconstructed previous blind left by a partial load. If both loads fail, the menu gets a fresh event manager so abandoned `no_delete` events cannot run against the new scene.
+
 The progress adapter keeps the seeded-run restriction monotonic. Passive recording and ordinary single Undo retain vanilla eligibility; explicit worldline features and confirmed continuous Undo apply the restriction. Candidate-pool adapters temporarily use the root profile conditions and restore the real profile afterwards.
 
 Imported files are JSON data, never executable Lua. Native profiles, discoveries and cloud history are not rewound. Compatibility is tested for the documented engine/loader baseline, not every possible action sequence or third-party mod.

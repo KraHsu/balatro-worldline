@@ -527,6 +527,7 @@ end
 
 local runtime_fields = {
     ["blind"] = true, ["selected_back"] = true, ["selected_back_key"] = true,
+    ["viewed_back"] = true,
     ["current_scoring_calculation"] = true,
     ["tags"] = true, ["round_resets.blind"] = true
 }
@@ -549,6 +550,33 @@ local function restore_game_data(target, saved, prefix)
             end
         end
     end
+end
+
+-- viewed_back is a menu/collection preview, not the run's selected deck. Native
+-- saves cull it to an Object marker, but start_run never reconstructs it. SMODS
+-- prefers that truthy marker over selected_back when constructing card sprites.
+-- Prepare both Continue and checkpoint loads without modifying their source.
+function Snapshot.prepare_native_load(args)
+    if not (args and type(args.savetext) == 'table' and type(args.savetext.GAME) == 'table') then
+        return args
+    end
+    if args.savetext.GAME.viewed_back ~= nil then
+        local prepared, save, game = {}, {}, {}
+        for key, value in pairs(args) do prepared[key] = value end
+        for key, value in pairs(args.savetext) do save[key] = value end
+        for key, value in pairs(args.savetext.GAME) do game[key] = value end
+        game.viewed_back = nil
+        save.GAME, prepared.savetext = game, save
+        args = prepared
+    end
+    -- A partially failed load may leave the previous GAME.blind as its save
+    -- marker. Native start_run reads it for background colours *before* loading
+    -- the target GAME. Let its normal no-blind path handle this interim state.
+    local blind = G.GAME and G.GAME.blind
+    if blind and (type(blind) ~= 'table' or type(blind.change_colour) ~= 'function') then
+        G.GAME.blind = nil
+    end
+    return args
 end
 
 local function restore_impl(snapshot)
@@ -574,7 +602,7 @@ local function restore_impl(snapshot)
     for _, area in ipairs(area_names) do G['load_' .. area] = nil end
     for _, area in ipairs(shop_areas) do native_save.cardAreas[area] = nil end
     native_save.cardAreas.pack_cards = nil
-    G:start_run({ savetext = native_save })
+    G:start_run(Snapshot.prepare_native_load({ savetext = native_save }))
     -- start_run schedules a delayed input unlock and unlock-notification work for
     -- loading an ordinary save. Objects are already rebuilt synchronously here;
     -- do not replay those notifications or wait on an artificial load delay.
@@ -678,6 +706,9 @@ local function recover(context, reason)
     -- Do not expose a half-built run for further recording if even the backup
     -- cannot load. The independent tree file remains available for retry.
     if type(G.delete_run) == "function" then pcall(G.delete_run, G) end
+    -- Native clear_queue retains no_delete events. None from the two partial
+    -- loads belong to the menu; even their card/area references may be invalid.
+    G.E_MANAGER = EventManager()
     if type(G.main_menu) == "function" then pcall(G.main_menu, G, "game") end
     finish_guard(context)
     pending = nil

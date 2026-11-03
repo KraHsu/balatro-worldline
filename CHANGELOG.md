@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.8
+
+- Discard the serialized menu/collection deck preview before checkpoint and Continue loads so Steamodded constructs card backs from the real selected deck, preventing `effect` errors during Undo.
+- Keep the discarded preview out of restored gameplay data and branch/video comparisons. The selected deck, gameplay state and seeded RNG remain checked.
+- Allow backup recovery after a partial native load leaves an unconstructed blind, and discard abandoned events before the menu fallback if both loads fail.
+- Keep existing save and archive files unchanged; no migration is required.
+
 ## 0.6.7
 
 - Prevent repeating native card-pulse events, such as DNA waiting for the first played hand, from indefinitely blocking stable snapshots and queued inputs.

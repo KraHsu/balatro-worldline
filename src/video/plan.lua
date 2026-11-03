@@ -121,7 +121,7 @@ local ignored={unique_val=true,unique_val__saved_ID=true,highlighted=true,seeded
     -- Blueprint/Brainstorm tooltip colour/text caches; native scoring uses
     -- the target centre's blueprint_compat instead of these hover fields.
     blueprint_compat_check=true,blueprint_compat_ui=true}
-local saved_objects={blind=true,selected_back=true,current_scoring_calculation=true,tags=true}
+local saved_objects={blind=true,selected_back=true,viewed_back=true,current_scoring_calculation=true,tags=true}
 local playing_centres={c_base=true,m_bonus=true,m_mult=true,m_wild=true,m_glass=true,
     m_steel=true,m_stone=true,m_gold=true,m_lucky=true}
 local function omit(path,key,policy)

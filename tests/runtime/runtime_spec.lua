@@ -179,6 +179,7 @@ function get_current_pool()
 end
 Snapshot.install_hand_order=function()end
 Snapshot.install_visual_events=function()end
+Snapshot.prepare_native_load=function(args)return args end
 local app = dofile("src/main.lua")
 local function persisted(id)
     -- An accepted async save becomes durable only after the write ACK. Tests
